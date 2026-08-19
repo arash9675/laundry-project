@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tabu Wash</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        .btn-transition { transition: all 0.2s ease; }
+    </style>
+</head>
+<body class="min-h-screen bg-[#f7f6f4] text-slate-800 antialiased">
+
+    <!-- Sticky header -->
+    <header class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur border-b border-slate-200 z-40">
+        <div class="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="dashboard.html" class="font-bold text-slate-900 tracking-tight">Tabu Wash</a>
+            <div class="flex items-center gap-2">
+                <button id="alarms-btn" class="relative inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 btn-transition">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span id="alarms-label">Alarms</span>
+                    <span id="alarms-count" class="hidden min-w-5 h-5 px-1 rounded-full bg-indigo-600 text-white text-[11px] font-semibold inline-flex items-center justify-center">0</span>
+                </button>
+                <button id="lang-toggle" class="text-xs font-semibold uppercase tracking-wide border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 btn-transition">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Alarms dropdown -->
+    <div id="alarms-panel" class="hidden fixed top-16 right-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-slate-200 shadow-lg z-50 p-4">
+        <h3 class="text-sm font-semibold text-slate-900 mb-2">My alarms</h3>
+        <div id="alarms-list" class="space-y-2 text-sm text-slate-600"></div>
+    </div>
+
+    <main class="pt-20 pb-12 max-w-md mx-auto px-4">
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+
+            <div class="text-center mb-6">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-widest" id="txt-building">Building</h2>
+                <h1 class="text-2xl font-bold text-slate-900 mt-1" id="txt-machine-id">Scan a machine</h1>
+
+                <div id="machine-status-display" class="hidden mt-3 text-sm font-medium px-3 py-1 rounded-full inline-block transition-colors"></div>
+
+                <div id="error-report-note" class="hidden mt-2 text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-full px-3 py-1.5 inline-flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <span id="error-report-note-text"></span>
+                </div>
+
+                <div id="alarm-active-notice" class="hidden mt-2 text-xs font-medium text-indigo-600"></div>
+                <div id="request-status-message" class="hidden mt-3 text-sm rounded-lg border px-3 py-2 text-left"></div>
+            </div>
+
+            <div id="setup-form" class="hidden space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2" id="txt-select-prog">Select program</label>
+                    <div class="flex items-center gap-2">
+                        <select id="program-select" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none">
+                            <option value="" disabled selected>Select…</option>
+                        </select>
+                        <button id="info-btn" class="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 btn-transition" aria-label="Cycle details">
+                            <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="extra-options" class="grid grid-cols-2 gap-2 text-xs"></div>
+
+                <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                    <span class="text-sm font-medium text-slate-700" id="txt-alarm">Notify me when done</span>
+                    <input type="checkbox" id="alarm-toggle" class="h-5 w-5 accent-indigo-600 cursor-pointer">
+                </div>
+
+                <div class="flex items-center justify-between border border-slate-200 rounded-xl px-4 py-3">
+                    <span class="text-sm font-medium text-slate-700" id="txt-duration">Total duration</span>
+                    <div class="flex items-center gap-3">
+                        <button type="button" id="btn-minus" class="w-9 h-9 rounded-lg border border-slate-200 bg-white font-semibold text-slate-600 hover:bg-slate-50 btn-transition">−</button>
+                        <span id="current-duration" class="font-semibold text-slate-900 w-16 text-center tabular-nums">0 min</span>
+                        <button type="button" id="btn-plus" class="w-9 h-9 rounded-lg border border-slate-200 bg-white font-semibold text-slate-600 hover:bg-slate-50 btn-transition">+</button>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl px-4 py-3.5 btn-transition">Start machine</button>
+            </div>
+
+            <!-- Installation guide (shown when no machine is selected) -->
+            <div id="install-guide" class="hidden space-y-4">
+                <p class="text-sm text-slate-500 text-center leading-relaxed" id="txt-install-subtitle"></p>
+
+                <div id="ios-card" class="rounded-2xl border border-slate-200 bg-white p-5">
+                    <div class="font-semibold text-sm text-slate-900 mb-3" id="txt-ios-heading"></div>
+                    <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line" id="txt-ios-steps"></p>
+                </div>
+
+                <div id="os-divider" class="text-center text-xs text-slate-400 font-medium"></div>
+
+                <div id="android-card" class="rounded-2xl border border-slate-200 bg-white p-5">
+                    <div class="font-semibold text-sm text-slate-900 mb-3" id="txt-android-heading"></div>
+                    <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line" id="txt-android-steps"></p>
+                </div>
+
+                <button id="install-btn" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl px-4 py-3.5 btn-transition">Install app</button>
+                <a href="dashboard.html" class="block w-full text-center bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl px-4 py-3.5 btn-transition" id="txt-goto-dashboard"></a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Info modal -->
+    <div id="info-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 class="font-semibold text-lg mb-2 text-slate-900" id="modal-title">Cycle details</h3>
+            <p class="text-sm text-slate-600 mb-5 leading-relaxed" id="modal-desc"></p>
+            <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2.5 rounded-xl btn-transition">Close</button>
+        </div>
+    </div>
+
+    <!-- Start confirmation modal -->
+    <div id="start-confirm-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 class="font-semibold text-lg text-slate-900 mb-2">Quick one</h3>
+            <p class="text-sm text-slate-600 mb-5 leading-relaxed">Put in the real time — everyone's planning around it.</p>
+            <div class="space-y-2">
+                <button id="confirm-start" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl btn-transition">Confirm</button>
+                <button id="cancel-start" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium py-3 rounded-xl btn-transition">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alarm modal -->
+    <div id="persistent-alarm-modal" class="hidden fixed inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-6 z-50 text-center">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+            <div class="mx-auto w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900 mb-2" id="alarm-modal-title">Laundry cycle finished</h2>
+            <p class="text-sm text-slate-600 mb-6" id="alarm-modal-desc">Your tracked machine cycle is complete.</p>
+            <button onclick="dismissAlarm()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl btn-transition">Dismiss</button>
+        </div>
+    </div>
+
+    <!-- Onboarding modal -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 class="font-semibold text-lg text-slate-900 mb-2">Welcome to Tabu Wash</h3>
+            <p class="text-sm text-slate-600 mb-4 leading-relaxed">See which machines are free before you head down — no more wasted trips.</p>
+            <ol class="text-sm text-slate-600 space-y-2.5 mb-4 list-none">
+                <li class="flex gap-2.5"><span class="font-semibold text-slate-900 shrink-0">1.</span><span><strong>Start the timer</strong> — log your machine when you press Start.</span></li>
+                <li class="flex gap-2.5"><span class="font-semibold text-slate-900 shrink-0">2.</span><span><strong>Pick up on time</strong> — grab your laundry when the alarm rings.</span></li>
+            </ol>
+            <p class="text-xs text-slate-500 mb-5 leading-relaxed">This app is only as accurate as what we enter. It's an early version with bugs — send feedback to <a href="mailto:tabuwash@gmail.com" class="font-medium text-indigo-600 hover:underline">tabuwash@gmail.com</a>.</p>
+            <button id="onboarding-close" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2.5 rounded-xl btn-transition">Got it</button>
+        </div>
+    </div>
+
+    <script>
+        const programConfig = {
+    "cottons": { name: { en: "Cottons", de: "Baumwolle" }, base: 170, extras: { prewash: 20, waterPlus: 10, preIroning: 15, short: -45 }, locked: [], desc: { en: "Standard 40°C–60°C cycle for daily wear, cotton linens, towels, and bedding. Supports full spin speed. Miele load recognition adjusts final countdown within the first 10 minutes.", de: "Standard 40°C–60°C Waschgang für Alltagskleidung, Bettwäsche und Handtücher. Maximale Schleuderdrehzahl. Miele Mengenautomatik passt Restzeit in den ersten 10 Min. an." } },
+    "min_iron": { name: { en: "Minimum Iron", de: "Pflegeleicht" }, base: 90, extras: { prewash: 15, waterPlus: 8, preIroning: 12, short: -30 }, locked: [], desc: { en: "Gentle 40°C wash engineered for synthetic garments, mixed fibers, and easy-care fabrics to prevent creasing.", de: "Schonender 40°C-Waschgang für Synthetik, Mischgewebe und pflegeleichte Kleidung zur Knittervermeidung." } },
+    "delicates": { name: { en: "Delicates", de: "Feinwäsche" }, base: 65, extras: { prewash: 15, waterPlus: 5, short: -15 }, locked: ['preIroning'], desc: { en: "30°C delicate cycle for fine synthetics, lace, and curtains.", de: "30°C-Feingang für empfindliche Synthetik, Spitze und Gardinen." } },
+    "woollens": { name: { en: "Woollens", de: "Wolle" }, base: 45, extras: { waterPlus: 5 }, locked: ['prewash', 'short', 'preIroning'], desc: { en: "Ultra-gentle 30°C cycle for wool and silk.", de: "Besonders schonender 30°C-Waschgang für Wolle und Seide." } },
+    "quick_power": { name: { en: "QuickPowerWash", de: "QuickPowerWash" }, base: 49, extras: {}, locked: ['prewash', 'waterPlus', 'preIroning', 'short'], desc: { en: "Fast wash delivering full cleaning performance in 49 minutes.", de: "Schnellwaschprogramm mit voller Reinigungsleistung in 49 Minuten." } },
+    "express_20": { name: { en: "Express 20", de: "Express 20" }, base: 20, extras: {}, locked: ['prewash', 'waterPlus', 'preIroning', 'short'], desc: { en: "Fast 20-minute refresh cycle for lightly soiled loads.", de: "Schnelles 20-Minuten-Programm für leicht verschmutzte Wäsche." } },
+    "eco": { name: { en: "ECO 40-60", de: "ECO 40-60" }, base: 210, extras: {}, locked: ['prewash', 'waterPlus', 'preIroning', 'short'], desc: { en: "Energy- and water-saving cycle for normally soiled cottons.", de: "Energiesparprogramm für normal verschmutzte Baumwolle." } },
+    "shirts": { name: { en: "Shirts", de: "Oberhemden" }, base: 60, extras: { prewash: 15, short: -20 }, locked: ['waterPlus'], defaults: ['preIroning'], desc: { en: "Tailored 40°C cycle for dress shirts and blouses.", de: "Spezielles 40°C-Programm für Oberhemden und Blusen." } },
+    "dark": { name: { en: "Dark / Denim", de: "Dunkles / Jeans" }, base: 75, extras: { prewash: 20, preIroning: 15, short: -25 }, locked: ['waterPlus'], desc: { en: "Gentle cycle to prevent color fading on denim and dark garments.", de: "Schonender Waschgang gegen Ausbleichen bei Dunklem und Jeans." } },
+    "clean": { name: { en: "Clean Machine", de: "Maschine reinigen" }, base: 70, extras: {}, locked: ['prewash', 'waterPlus', 'preIroning', 'short'], desc: { en: "High-heat 90°C cycle to sanitize the drum.", de: "90°C-Hygieneprogramm zur Trommelreinigung." } }
+};
+
+        const translations = {
+            en: {
+                back: "Back to dashboard", building: "Building", select: "Select program", duration: "Total duration",
+                start: "Start machine", alarm: "Notify me when done",
+                available: "Available", inUse: "In use", minRem: "min left", estimated: "estimated",
+                alarmArmed: "Alarm armed — will notify in the background",
+                started: "Machine started. We'll keep you posted.",
+                problemReported: "A neighbour reported a problem with this machine.",
+                offline: "Couldn't reach the server. Please try again.",
+                extras: { prewash: "Pre-wash", waterPlus: "Water plus", preIroning: "Pre-ironing", short: "Short" },
+                installTitle: "Add to home screen", installSubtitle: "Install Tabu Wash for one-tap access from your phone.",
+                iosHeading: "iPhone / iPad", iosSteps: "1. Open this page in Safari\n2. Tap the Share button\n3. Choose \"Add to Home Screen\"\n4. Tap \"Add\"",
+                androidHeading: "Android", androidSteps: "1. Open this page in Chrome\n2. Tap the menu (top right)\n3. Choose \"Install app\"\n4. Tap \"Install\"",
+                gotoDashboard: "Go to dashboard", orDivider: "or", alarms: "Alarms", noAlarms: "No alarms set.",
+                confirmTitle: "Quick one", confirmBody: "Put in the real time — everyone's planning around it.",
+                confirm: "Confirm", cancel: "Cancel"
+            },
+            de: {
+                back: "Zurück zum Dashboard", building: "Gebäude", select: "Programm wählen", duration: "Gesamtdauer",
+                start: "Maschine starten", alarm: "Benachrichtigen, wenn fertig",
+                available: "Verfügbar", inUse: "In Benutzung", minRem: "Min. verbleibend", estimated: "geschätzt",
+                alarmArmed: "Alarm aktiv — benachrichtigt im Hintergrund",
+                started: "Maschine gestartet. Wir halten dich auf dem Laufenden.",
+                problemReported: "Ein Nachbar hat ein Problem mit dieser Maschine gemeldet.",
+                offline: "Server nicht erreichbar. Bitte erneut versuchen.",
+                extras: { prewash: "Vorwäsche", waterPlus: "Wasser plus", preIroning: "Vorbügeln", short: "Kurz" },
+                installTitle: "Zum Home-Bildschirm hinzufügen", installSubtitle: "Installiere Tabu Wash für schnellen Zugriff vom Handy.",
+                iosHeading: "iPhone / iPad", iosSteps: "1. Öffne diese Seite in Safari\n2. Tippe auf die Teilen-Taste\n3. Wähle \"Zum Home-Bildschirm\"\n4. Tippe auf \"Hinzufügen\"",
+                androidHeading: "Android", androidSteps: "1. Öffne diese Seite in Chrome\n2. Tippe auf das Menü (rechts oben)\n3. Wähle \"App installieren\"\n4. Tippe auf \"Installieren\"",
+                gotoDashboard: "Zum Dashboard", orDivider: "oder", alarms: "Alarme", noAlarms: "Keine Alarme gesetzt.",
+                confirmTitle: "Kurz", confirmBody: "Trag die echte Zeit ein — alle planen danach.",
+                confirm: "Bestätigen", cancel: "Abbrechen"
+            }
+        };
+
+        const ALL_EXTRAS = { prewash: 15, waterPlus: 5, preIroning: 10, short: -15 };
+
+        let lang = localStorage.getItem('laundryLang') || 'en';
+        let wantsAlarm = false;
+        let selectedKey = "";
+        let baseMins = 0;
+        let manualAdjustment = 0;
+        let activeExtras = {};
+        let machineIsInUse = false;
+        let activeAlarmAudio = null;
+
+        const API_URL = window.location.origin;
+        const urlParams = new URLSearchParams(window.location.search);
+        const machineId = urlParams.get('machine');
+
+        function detectOS() { const u = navigator.userAgent || ''; if (/iPad|iPhone|iPod/i.test(u) && !window.MSStream) return 'ios'; if (/android/i.test(u)) return 'android'; return 'other'; }
+        const userOS = detectOS();
+
+        function getClientId() {
+            let id = localStorage.getItem('laundryClientId');
+            if (!id) {
+                id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('c-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10));
+                localStorage.setItem('laundryClientId', id);
+            }
+            return id;
+        }
+
+        function getAlarms() { try { return JSON.parse(localStorage.getItem('laundryAlarms') || '[]'); } catch (e) { return []; } }
+        function saveAlarms(list) { localStorage.setItem('laundryAlarms', JSON.stringify(list)); }
+        function armAlarm(m, t) { const list = getAlarms().filter(a => a.m !== m); list.push({ m, t }); saveAlarms(list); }
+        function disarmAlarm(m) { saveAlarms(getAlarms().filter(a => a.m !== m)); }
+
+        function showStatusMessage(message, tone = 'info') {
+            const el = document.getElementById('request-status-message');
+            const tones = { info: 'bg-slate-50 text-slate-700 border-slate-200', success: 'bg-emerald-50 text-emerald-700 border-emerald-200', warning: 'bg-amber-50 text-amber-700 border-amber-200', error: 'bg-rose-50 text-rose-700 border-rose-200' };
+            el.textContent = message;
+            el.className = `mt-3 text-sm rounded-lg border px-3 py-2 text-left ${tones[tone] || tones.info}`;
+        }
+
+        async function ensureServiceWorkerReady() {
+            if (!('serviceWorker' in navigator)) return null;
+            const registration = await navigator.serviceWorker.register('./sw.js');
+            return navigator.serviceWorker.ready || registration;
+        }
+
+        async function requestNotificationAccess() {
+            if (!('Notification' in window)) return false;
+            if (Notification.permission === 'granted') return true;
+            if (Notification.permission === 'denied') return false;
+            return (await Notification.requestPermission()) === 'granted';
+        }
+
+        function formatRemaining(endTime) {
+            const remMins = Math.max(0, Math.round((new Date(endTime) - new Date()) / 60000));
+            return lang === 'de' ? `${remMins} Min. verbleibend` : `${remMins} min remaining`;
+        }
+
+        async function sendLaundryNotification(title, body, options = {}) {
+            const allowed = await requestNotificationAccess();
+            if (!allowed) return;
+            const registration = await ensureServiceWorkerReady();
+            const payload = { type: 'SHOW_LAUNDRY_NOTIFICATION', title, body, tag: options.tag || 'laundry-active-timer', renotify: Boolean(options.renotify), requireInteraction: Boolean(options.requireInteraction), silent: Boolean(options.silent), url: options.url || `./index.html?machine=${machineId || ''}` };
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage(payload);
+            } else if (registration && registration.showNotification) {
+                registration.showNotification(title, { body, tag: payload.tag, renotify: payload.renotify, requireInteraction: payload.requireInteraction, silent: payload.silent, icon: './icon.png', badge: './icon.png', data: { url: payload.url } });
+            }
+        }
+
+        function clearLaundryNotification(tag = 'laundry-active-timer') {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_LAUNDRY_NOTIFICATION', tag });
+            }
+        }
+
+        let cachedVapidKey = null;
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+            return outputArray;
+        }
+
+        (async function preloadVapidKey() {
+            try {
+                const r = await fetch(`${API_URL}/vapid_public_key`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+                const d = await r.json();
+                if (d.public_key) cachedVapidKey = d.public_key;
+            } catch (e) { console.log('VAPID key preload failed:', e); }
+        })();
+
+        async function subscribeToPush(targetMachineId) {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+            try {
+                if (!cachedVapidKey) return;
+                const registration = await navigator.serviceWorker.ready;
+                let subscription = await registration.pushManager.getSubscription();
+                if (!subscription) {
+                    subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(cachedVapidKey) });
+                }
+                await fetch(`${API_URL}/subscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify({ machine_id: targetMachineId, subscription: subscription.toJSON() }) });
+            } catch (err) { console.error('Push subscribe failed:', err); }
+        }
+
+        async function unsubscribeFromPush(targetMachineId = machineId) {
+            if (!targetMachineId || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                if (subscription) {
+                    await fetch(`${API_URL}/unsubscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify({ machine_id: targetMachineId, subscription: subscription.toJSON() }) });
+                }
+            } catch (err) { console.log('Push unsubscribe failed:', err); }
+        }
+
+        function updateUI() {
+            document.getElementById('lang-toggle').textContent = lang.toUpperCase();
+            document.getElementById('alarms-label').textContent = translations[lang].alarms;
+            document.getElementById('txt-select-prog').textContent = translations[lang].select;
+            document.getElementById('txt-duration').textContent = translations[lang].duration;
+            document.getElementById('start-btn').textContent = translations[lang].start;
+            document.getElementById('txt-alarm').textContent = translations[lang].alarm;
+            document.getElementById('alarm-active-notice').textContent = translations[lang].alarmArmed;
+            document.getElementById('txt-install-subtitle').textContent = translations[lang].installSubtitle;
+            document.getElementById('txt-ios-heading').textContent = translations[lang].iosHeading;
+            document.getElementById('txt-ios-steps').textContent = translations[lang].iosSteps;
+            document.getElementById('txt-android-heading').textContent = translations[lang].androidHeading;
+            document.getElementById('txt-android-steps').textContent = translations[lang].androidSteps;
+            document.getElementById('txt-goto-dashboard').textContent = translations[lang].gotoDashboard;
+            document.getElementById('os-divider').textContent = translations[lang].orDivider;
+            document.getElementById('confirm-start').textContent = translations[lang].confirm;
+            document.getElementById('cancel-start').textContent = translations[lang].cancel;
+            document.getElementById('start-confirm-modal').querySelector('h3').textContent = translations[lang].confirmTitle;
+            document.getElementById('start-confirm-modal').querySelector('p').textContent = translations[lang].confirmBody;
+
+            if (!machineId) {
+                document.getElementById('txt-machine-id').textContent = translations[lang].installTitle;
+                document.getElementById('txt-building').textContent = '';
+            } else {
+                const b = machineId.split('-')[0];
+                document.getElementById('txt-building').textContent = `${translations[lang].building} ${b}`;
+                document.getElementById('txt-machine-id').textContent = machineId;
+            }
+
+            const programSelect = document.getElementById('program-select');
+            const savedValue = programSelect.value;
+            programSelect.innerHTML = `<option value="" disabled selected>Select…</option>`;
+            Object.keys(programConfig).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = programConfig[key].name[lang];
+                programSelect.appendChild(opt);
+            });
+            programSelect.value = savedValue;
+
+            if (selectedKey) renderExtras();
+            updateAlarmNotice();
+            renderAlarmsPanel();
+            fetchMachineStatus();
+        }
+
+        function updateAlarmNotice() {
+            const notice = document.getElementById('alarm-active-notice');
+            if (wantsAlarm && machineIsInUse) notice.classList.remove('hidden');
+            else notice.classList.add('hidden');
+        }
+
+        function updateErrorNote(isReported) {
+            const note = document.getElementById('error-report-note');
+            const noteText = document.getElementById('error-report-note-text');
+            if (isReported) { noteText.textContent = translations[lang].problemReported; note.classList.remove('hidden'); }
+            else note.classList.add('hidden');
+        }
+
+        function renderExtras() {
+            const container = document.getElementById('extra-options');
+            container.innerHTML = '';
+            if (!selectedKey) return;
+            Object.keys(ALL_EXTRAS).forEach(extra => {
+                const translatedName = translations[lang].extras[extra] || extra;
+                container.innerHTML += `
+                    <label class="flex items-center justify-between gap-2 border border-slate-200 rounded-lg px-3 py-2.5 cursor-pointer hover:bg-slate-50 btn-transition">
+                        <span class="text-xs font-medium text-slate-700">${translatedName}</span>
+                        <input type="checkbox" ${activeExtras[extra] ? 'checked' : ''} onchange="toggleExtra('${extra}')" class="h-4 w-4 accent-indigo-600 cursor-pointer">
+                    </label>`;
+            });
+        }
+
+        function updateDisplay() {
+            let total = baseMins + manualAdjustment;
+            if (selectedKey) { Object.keys(activeExtras).forEach(ex => { if (activeExtras[ex]) total += ALL_EXTRAS[ex] || 0; }); }
+            document.getElementById('current-duration').textContent = `${Math.max(0, total)} min`;
+        }
+
+        function toggleExtra(extra) { activeExtras[extra] = !activeExtras[extra]; updateDisplay(); }
+
+        function triggerPersistentAlarm(mId) {
+            const modal = document.getElementById('persistent-alarm-modal');
+            if (!modal.classList.contains('hidden')) return;
+            modal.classList.remove('hidden');
+            document.getElementById('alarm-modal-title').textContent = lang === 'de' ? `Maschine ${mId} fertig` : `Machine ${mId} finished`;
+            document.getElementById('alarm-modal-desc').textContent = lang === 'de' ? `Dein Waschgang ist beendet.` : `Your laundry cycle has completed.`;
+            if (!activeAlarmAudio) {
+                activeAlarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
+                activeAlarmAudio.loop = true;
+                activeAlarmAudio.play().catch(e => console.log("Audio autoplay restricted:", e));
+            }
+            sendLaundryNotification("Laundry finished", `Machine ${mId} is ready.`, { tag: 'laundry-finished', renotify: true, requireInteraction: true, url: `./index.html?machine=${mId}` }).catch(e => console.log(e));
+        }
+
+        function dismissAlarm() {
+            if (activeAlarmAudio) { activeAlarmAudio.pause(); activeAlarmAudio.currentTime = 0; activeAlarmAudio = null; }
+            document.getElementById('persistent-alarm-modal').classList.add('hidden');
+            const now = new Date();
+            const remaining = getAlarms().filter(a => {
+                const m = liveData.find(x => String(x.Machine_ID) === String(a.m));
+                const done = !m || m.Status === "Available" || now >= new Date(a.t);
+                if (done) unsubscribeFromPush(a.m);
+                return !done;
+            });
+            saveAlarms(remaining);
+            clearLaundryNotification('laundry-active-timer');
+            clearLaundryNotification('laundry-finished');
+            renderAlarmsPanel();
+        }
+
+        function renderAlarmsPanel() {
+            const count = document.getElementById('alarms-count');
+            const list = document.getElementById('alarms-list');
+            const alarms = getAlarms();
+            count.textContent = alarms.length;
+            count.classList.toggle('hidden', alarms.length === 0);
+            if (!alarms.length) { list.innerHTML = `<p class="text-sm text-slate-400">${translations[lang].noAlarms}</p>`; return; }
+            list.innerHTML = '';
+            alarms.forEach(a => {
+                const m = liveData.find(x => String(x.Machine_ID) === String(a.m));
+                const now = new Date();
+                const end = new Date(a.t);
+                const done = !m || m.Status === "Available" || now >= end;
+                const mins = done ? 0 : Math.max(0, Math.round((end - now) / 60000));
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between gap-2 py-1.5";
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-slate-800">${a.m}</span>
+                        <span class="text-xs text-slate-500">${done ? translations[lang].available : mins + ' ' + translations[lang].minRem}</span>
+                    </div>
+                    <button onclick="removeAlarm('${a.m}')" class="text-xs font-medium text-rose-600 hover:text-rose-700">Remove</button>`;
+                list.appendChild(row);
+            });
+        }
+
+        function removeAlarm(m) {
+            disarmAlarm(m);
+            if (m === machineId) { wantsAlarm = false; document.getElementById('alarm-toggle').checked = false; }
+            unsubscribeFromPush(m);
+            renderAlarmsPanel();
+            updateAlarmNotice();
+        }
+
+        async function fetchMachineStatus() {
+            try {
+                const response = await fetch(`${API_URL}/get_machines`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+                const data = await response.json();
+                liveData = data;
+                const now = new Date();
+                const alarms = getAlarms();
+                const done = [], running = [];
+                alarms.forEach(a => {
+                    const m = data.find(x => String(x.Machine_ID) === String(a.m));
+                    const isDone = !m || m.Status === "Available" || now >= new Date(a.t);
+                    if (isDone) done.push(a); else running.push(a);
+                });
+                if (done.length) {
+                    triggerPersistentAlarm(done[0].m);
+                    done.forEach(a => unsubscribeFromPush(a.m));
+                    saveAlarms(running);
+                }
+                running.forEach(a => {
+                    const remMins = Math.max(0, Math.round((new Date(a.t) - now) / 60000));
+                    sendLaundryNotification('Laundry timer active', `Machine ${a.m}: ${remMins} min remaining`, { tag: 'laundry-active-timer', silent: true, renotify: true, url: `./index.html?machine=${a.m}` }).catch(e => console.log(e));
+                });
+                renderAlarmsPanel();
+
+                if (!machineId) return;
+                const machineData = data.find(m => String(m.Machine_ID) === String(machineId));
+                if (!machineData) return;
+
+                const statusBadge = document.getElementById('machine-status-display');
+                statusBadge.classList.remove('hidden');
+                const end = machineData.Expected_End_Time ? new Date(machineData.Expected_End_Time) : null;
+                const isAvail = !end || end <= now;
+                const isReportedError = Boolean(machineData.Reported_Error);
+
+                if (isAvail) {
+                    machineIsInUse = false;
+                    statusBadge.textContent = translations[lang].available;
+                    statusBadge.className = "mt-3 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full inline-block";
+                } else {
+                    machineIsInUse = true;
+                    const mins = Math.max(0, Math.round((end - now) / 60000));
+                    statusBadge.textContent = `${translations[lang].inUse} · ${mins} ${translations[lang].minRem}`;
+                    statusBadge.className = "mt-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full inline-block animate-pulse";
+                }
+
+                updateErrorNote(isReportedError);
+                updateAlarmNotice();
+            } catch (e) { console.error(e); }
+        }
+
+        async function doStart() {
+            document.getElementById('start-confirm-modal').classList.add('hidden');
+            try {
+                if (wantsAlarm && 'Notification' in window) await requestNotificationAccess();
+
+                let total = baseMins + manualAdjustment;
+                if (selectedKey) { Object.keys(activeExtras).forEach(ex => { if (activeExtras[ex]) total += ALL_EXTRAS[ex] || 0; }); }
+
+                const endTime = new Date();
+                endTime.setMinutes(endTime.getMinutes() + Math.max(0, total));
+
+                const payload = { machine_id: machineId, status: "In Use", program: selectedKey, expected_end_time: endTime.toISOString(), user_id: getClientId() };
+                const response = await fetch(`${API_URL}/update_machine`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify(payload) });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || `Server responded with ${response.status}`);
+
+                if (wantsAlarm) {
+                    armAlarm(machineId, endTime.toISOString());
+                    subscribeToPush(machineId);
+                    sendLaundryNotification('Laundry timer active', `Machine ${machineId}: ${formatRemaining(endTime)}`, { tag: 'laundry-active-timer', silent: true, renotify: true, url: `./index.html?machine=${machineId}` }).catch(e => console.log(e));
+                }
+
+                machineIsInUse = true;
+                showStatusMessage(result.message || translations[lang].started, 'success');
+                updateAlarmNotice();
+                renderAlarmsPanel();
+                fetchMachineStatus();
+            } catch (err) {
+                console.error("Start Error:", err);
+                showStatusMessage("Failed to start machine: " + err.message, 'error');
+            }
+        }
+
+        const alarmToggle = document.getElementById('alarm-toggle');
+        if (machineId) wantsAlarm = getAlarms().some(a => a.m === machineId);
+        alarmToggle.checked = wantsAlarm;
+        alarmToggle.addEventListener('change', (e) => {
+            wantsAlarm = e.target.checked;
+            if (wantsAlarm) requestNotificationAccess().catch(err => console.log(err));
+            else { disarmAlarm(machineId); unsubscribeFromPush(); }
+            updateAlarmNotice();
+        });
+
+        document.getElementById('start-btn').onclick = () => { document.getElementById('start-confirm-modal').classList.remove('hidden'); };
+        document.getElementById('confirm-start').onclick = doStart;
+        document.getElementById('cancel-start').onclick = () => { document.getElementById('start-confirm-modal').classList.add('hidden'); };
+
+        document.getElementById('lang-toggle').onclick = () => { lang = lang === 'en' ? 'de' : 'en'; localStorage.setItem('laundryLang', lang); updateUI(); };
+        document.getElementById('btn-minus').onclick = () => { manualAdjustment -= 5; updateDisplay(); };
+        document.getElementById('btn-plus').onclick = () => { manualAdjustment += 5; updateDisplay(); };
+        document.getElementById('program-select').onchange = (e) => { selectedKey = e.target.value; baseMins = programConfig[selectedKey].base; manualAdjustment = 0; activeExtras = {}; if (programConfig[selectedKey].defaults) programConfig[selectedKey].defaults.forEach(d => activeExtras[d] = true); renderExtras(); updateDisplay(); };
+        document.getElementById('info-btn').onclick = () => { if (!selectedKey) return; document.getElementById('modal-title').textContent = programConfig[selectedKey].name[lang]; document.getElementById('modal-desc').textContent = programConfig[selectedKey].desc[lang]; document.getElementById('info-modal').classList.remove('hidden'); };
+        document.getElementById('alarms-btn').onclick = () => { document.getElementById('alarms-panel').classList.toggle('hidden'); };
+        document.getElementById('onboarding-close').onclick = () => { localStorage.setItem('onboarded', '1'); document.getElementById('onboarding-modal').classList.add('hidden'); };
+
+        if (machineId) {
+            document.getElementById('install-guide').classList.add('hidden');
+            document.getElementById('setup-form').classList.remove('hidden');
+        } else {
+            document.getElementById('setup-form').classList.add('hidden');
+            document.getElementById('install-guide').classList.remove('hidden');
+            document.getElementById('ios-card').classList.toggle('hidden', userOS === 'android');
+            document.getElementById('android-card').classList.toggle('hidden', userOS === 'ios');
+            document.getElementById('os-divider').classList.toggle('hidden', userOS !== 'other');
+        }
+
+        if (!localStorage.getItem('onboarded')) document.getElementById('onboarding-modal').classList.remove('hidden');
+
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn').classList.remove('hidden');
+        });
+        document.getElementById('install-btn').onclick = async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            document.getElementById('install-btn').classList.add('hidden');
+        };
+
+        updateUI();
+        setInterval(fetchMachineStatus, 5000);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => ensureServiceWorkerReady().catch(err => console.log('SW registration failed', err)));
+        }
+    </script>
+</body>
+</html>

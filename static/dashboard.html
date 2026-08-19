@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tabu Wash</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        .btn-transition { transition: all 0.2s ease; }
+    </style>
+</head>
+<body class="min-h-screen bg-[#f7f6f4] text-slate-800 antialiased">
+
+    <!-- Sticky header -->
+    <header class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur border-b border-slate-200 z-40">
+        <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+            <div class="font-bold text-slate-900 tracking-tight">Tabu Wash</div>
+            <div class="flex items-center gap-2">
+                <button id="alarms-btn" class="relative inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 btn-transition">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span id="alarms-label">Alarms</span>
+                    <span id="alarms-count" class="hidden min-w-5 h-5 px-1 rounded-full bg-indigo-600 text-white text-[11px] font-semibold inline-flex items-center justify-center">0</span>
+                </button>
+                <button id="lang-toggle" class="text-xs font-semibold uppercase tracking-wide border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 btn-transition">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Alarms dropdown -->
+    <div id="alarms-panel" class="hidden fixed top-16 right-4 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-slate-200 shadow-lg z-50 p-4">
+        <h3 class="text-sm font-semibold text-slate-900 mb-2">My alarms</h3>
+        <div id="alarms-list" class="space-y-2 text-sm text-slate-600"></div>
+    </div>
+
+    <main class="pt-20 pb-12 max-w-3xl mx-auto px-4">
+
+        <!-- Level 1: building selection -->
+        <div id="building-view">
+            <h1 class="text-lg font-semibold text-slate-900">Choose your building</h1>
+            <p class="text-sm text-slate-500 mb-4">Select a building to see its machines.</p>
+            <div id="building-list" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- Level 2: machine list -->
+        <div id="machines-view" class="hidden">
+            <button id="back-btn" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 mb-4 btn-transition">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                All buildings
+            </button>
+            <h2 class="text-lg font-semibold text-slate-900 mb-4" id="building-title">Building</h2>
+            <div id="machines-container" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </div>
+
+    </main>
+
+    <!-- Alarm modal -->
+    <div id="persistent-alarm-modal" class="hidden fixed inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-6 z-50 text-center">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+            <div class="mx-auto w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+                <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900 mb-2" id="alarm-modal-title">Laundry cycle finished</h2>
+            <p class="text-sm text-slate-600 mb-6" id="alarm-modal-desc">Your tracked machine cycle is complete.</p>
+            <button onclick="dismissAlarm()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl btn-transition">Dismiss</button>
+        </div>
+    </div>
+
+    <!-- Onboarding modal -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 class="font-semibold text-lg text-slate-900 mb-2">Welcome to Tabu Wash</h3>
+            <p class="text-sm text-slate-600 mb-4 leading-relaxed">See which machines are free before you head down — no more wasted trips.</p>
+            <ol class="text-sm text-slate-600 space-y-2.5 mb-4 list-none">
+                <li class="flex gap-2.5"><span class="font-semibold text-slate-900 shrink-0">1.</span><span><strong>Start the timer</strong> — log your machine when you press Start.</span></li>
+                <li class="flex gap-2.5"><span class="font-semibold text-slate-900 shrink-0">2.</span><span><strong>Pick up on time</strong> — grab your laundry when the alarm rings.</span></li>
+            </ol>
+            <p class="text-xs text-slate-500 mb-5 leading-relaxed">This app is only as accurate as what we enter. It's an early version with bugs — send feedback to <a href="mailto:tabuwash@gmail.com" class="font-medium text-indigo-600 hover:underline">tabuwash@gmail.com</a>.</p>
+            <button id="onboarding-close" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-2.5 rounded-xl btn-transition">Got it</button>
+        </div>
+    </div>
+
+    <script>
+        let liveData = [];
+        let currentBuilding = null;
+        const API_URL = window.location.origin;
+
+        let lang = localStorage.getItem('laundryLang') || 'en';
+        let activeAlarmAudio = null;
+
+        const txt = {
+            en: { title: "Choose your building", subtitle: "Select a building to see its machines.", back: "All buildings", building: "Building", free: "free", inUse: "in use", ready: "Available", min: "min left", estimated: "estimated", owner: "In use by", washers: "Washers", dryers: "Dryers", reportProblem: "Report a problem", problemReported: "Problem reported", reportProblemFailed: "Couldn't report the problem. Please try again.", alarms: "Alarms", noAlarms: "No alarms set." },
+            de: { title: "Gebäude wählen", subtitle: "Wähle ein Gebäude, um die Maschinen zu sehen.", back: "Alle Gebäude", building: "Gebäude", free: "frei", inUse: "in Benutzung", ready: "Verfügbar", min: "Min. verbleibend", estimated: "geschätzt", owner: "In Benutzung von", washers: "Waschmaschinen", dryers: "Trockner", reportProblem: "Problem melden", problemReported: "Problem gemeldet", reportProblemFailed: "Problem konnte nicht gemeldet werden.", alarms: "Alarme", noAlarms: "Keine Alarme gesetzt." }
+        };
+
+        function getClientId() {
+            let id = localStorage.getItem('laundryClientId');
+            if (!id) {
+                id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('c-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10));
+                localStorage.setItem('laundryClientId', id);
+            }
+            return id;
+        }
+
+        function getAlarms() {
+            try { return JSON.parse(localStorage.getItem('laundryAlarms') || '[]'); } catch (e) { return []; }
+        }
+        function saveAlarms(list) { localStorage.setItem('laundryAlarms', JSON.stringify(list)); }
+        function armAlarm(m, t) {
+            const list = getAlarms().filter(a => a.m !== m);
+            list.push({ m, t });
+            saveAlarms(list);
+        }
+        function disarmAlarm(m) { saveAlarms(getAlarms().filter(a => a.m !== m)); }
+
+        async function ensureServiceWorkerReady() {
+            if (!('serviceWorker' in navigator)) return null;
+            const registration = await navigator.serviceWorker.register('./sw.js');
+            return navigator.serviceWorker.ready || registration;
+        }
+
+        async function requestNotificationAccess() {
+            if (!('Notification' in window)) return false;
+            if (Notification.permission === 'granted') return true;
+            if (Notification.permission === 'denied') return false;
+            return (await Notification.requestPermission()) === 'granted';
+        }
+
+        async function sendLaundryNotification(title, body, options = {}) {
+            const allowed = await requestNotificationAccess();
+            if (!allowed) return;
+            const registration = await ensureServiceWorkerReady();
+            const payload = {
+                type: 'SHOW_LAUNDRY_NOTIFICATION', title, body,
+                tag: options.tag || 'laundry-active-timer',
+                renotify: Boolean(options.renotify),
+                requireInteraction: Boolean(options.requireInteraction),
+                silent: Boolean(options.silent),
+                url: options.url || './dashboard.html'
+            };
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage(payload);
+            } else if (registration && registration.showNotification) {
+                registration.showNotification(title, { body, tag: payload.tag, renotify: payload.renotify, requireInteraction: payload.requireInteraction, silent: payload.silent, icon: './icon.png', badge: './icon.png', data: { url: payload.url } });
+            }
+        }
+
+        function clearLaundryNotification(tag = 'laundry-active-timer') {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_LAUNDRY_NOTIFICATION', tag });
+            }
+        }
+
+        async function unsubscribeFromPush(machineId) {
+            if (!machineId || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                if (subscription) {
+                    await fetch(`${API_URL}/unsubscribe`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify({ machine_id: machineId, subscription: subscription.toJSON() }) });
+                }
+            } catch (err) { console.log('Push unsubscribe failed:', err); }
+        }
+
+        async function reportProblem(machineId) {
+            try {
+                const response = await fetch(`${API_URL}/report_machine_problem`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' }, body: JSON.stringify({ machine_id: machineId, client_id: getClientId() }) });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || `Server responded with ${response.status}`);
+                fetchMachines();
+            } catch (e) { console.error('Report problem failed:', e); alert(txt[lang].reportProblemFailed); }
+        }
+
+        const MASTER_MACHINES = [
+            { id: "58-W1", b: "58", t: "Washer" }, { id: "58-W2", b: "58", t: "Washer" }, { id: "58-D1", b: "58", t: "Dryer" },
+            { id: "60-W1", b: "60", t: "Washer" }, { id: "60-W2", b: "60", t: "Washer" }, { id: "60-D1", b: "60", t: "Dryer" },
+            { id: "62-W1", b: "62", t: "Washer" }, { id: "62-W2", b: "62", t: "Washer" }, { id: "62-W3", b: "62", t: "Washer" }, { id: "62-D1", b: "62", t: "Dryer" },
+            { id: "64-W1", b: "64", t: "Washer" }, { id: "64-W2", b: "64", t: "Washer" }, { id: "64-D1", b: "64", t: "Dryer" }
+        ];
+
+        function triggerPersistentAlarm(mId) {
+            const modal = document.getElementById('persistent-alarm-modal');
+            if (!modal.classList.contains('hidden')) return;
+            modal.classList.remove('hidden');
+            document.getElementById('alarm-modal-title').textContent = lang === 'de' ? `Maschine ${mId} fertig` : `Machine ${mId} finished`;
+            document.getElementById('alarm-modal-desc').textContent = lang === 'de' ? `Dein Waschgang ist beendet.` : `Your laundry cycle has completed.`;
+            if (!activeAlarmAudio) {
+                activeAlarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
+                activeAlarmAudio.loop = true;
+                activeAlarmAudio.play().catch(e => console.log("Audio autoplay restricted:", e));
+            }
+            sendLaundryNotification("Laundry finished", `Machine ${mId} is ready.`, { tag: 'laundry-finished', renotify: true, requireInteraction: true, url: `./index.html?machine=${mId}` }).catch(e => console.log(e));
+        }
+
+        function dismissAlarm() {
+            if (activeAlarmAudio) { activeAlarmAudio.pause(); activeAlarmAudio.currentTime = 0; activeAlarmAudio = null; }
+            document.getElementById('persistent-alarm-modal').classList.add('hidden');
+            // Disarm any finished alarms.
+            const now = new Date();
+            const remaining = getAlarms().filter(a => {
+                const m = liveData.find(x => String(x.Machine_ID) === String(a.m));
+                const done = !m || m.Status === "Available" || now >= new Date(a.t);
+                if (done) unsubscribeFromPush(a.m);
+                return !done;
+            });
+            saveAlarms(remaining);
+            clearLaundryNotification('laundry-active-timer');
+            clearLaundryNotification('laundry-finished');
+            renderAlarmsPanel();
+        }
+
+        async function fetchMachines() {
+            try {
+                const response = await fetch(`${API_URL}/get_machines`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
+                liveData = await response.json();
+                checkAlarmsAndRender();
+            } catch (e) {
+                console.log("No live data or offline, rendering cached view.");
+                checkAlarmsAndRender();
+            }
+        }
+
+        function checkAlarmsAndRender() {
+            const now = new Date();
+            const alarms = getAlarms();
+            const done = [];
+            const running = [];
+            alarms.forEach(a => {
+                const m = liveData.find(x => String(x.Machine_ID) === String(a.m));
+                const isDone = !m || m.Status === "Available" || now >= new Date(a.t);
+                if (isDone) done.push(a); else running.push(a);
+            });
+
+            if (done.length) {
+                triggerPersistentAlarm(done[0].m);
+                done.forEach(a => unsubscribeFromPush(a.m));
+                saveAlarms(running);
+            }
+
+            running.forEach(a => {
+                const remMins = Math.max(0, Math.round((new Date(a.t) - now) / 60000));
+                sendLaundryNotification('Laundry timer active', `Machine ${a.m}: ${remMins} min remaining`, { tag: 'laundry-active-timer', silent: true, renotify: true, url: `./index.html?machine=${a.m}` }).catch(e => console.log(e));
+            });
+
+            renderAlarmsPanel();
+            render();
+        }
+
+        function renderAlarmsPanel() {
+            const count = document.getElementById('alarms-count');
+            const list = document.getElementById('alarms-list');
+            const alarms = getAlarms();
+            count.textContent = alarms.length;
+            count.classList.toggle('hidden', alarms.length === 0);
+            if (!alarms.length) {
+                list.innerHTML = `<p class="text-sm text-slate-400">${txt[lang].noAlarms}</p>`;
+                return;
+            }
+            list.innerHTML = '';
+            alarms.forEach(a => {
+                const m = liveData.find(x => String(x.Machine_ID) === String(a.m));
+                const end = new Date(a.t);
+                const now = new Date();
+                const done = !m || m.Status === "Available" || now >= end;
+                const mins = done ? 0 : Math.max(0, Math.round((end - now) / 60000));
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between gap-2 py-1.5";
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-slate-800">${a.m}</span>
+                        <span class="text-xs text-slate-500">${done ? txt[lang].ready : mins + ' ' + txt[lang].min}</span>
+                    </div>
+                    <button onclick="removeAlarm('${a.m}')" class="text-xs font-medium text-rose-600 hover:text-rose-700">Remove</button>`;
+                list.appendChild(row);
+            });
+        }
+
+        function removeAlarm(m) {
+            disarmAlarm(m);
+            unsubscribeFromPush(m);
+            renderAlarmsPanel();
+        }
+
+        function render() {
+            document.getElementById('lang-toggle').textContent = lang.toUpperCase();
+            document.getElementById('alarms-label').textContent = txt[lang].alarms;
+            renderBuildings();
+            if (currentBuilding) renderMachines(currentBuilding);
+        }
+
+        function renderBuildings() {
+            const container = document.getElementById('building-list');
+            container.innerHTML = '';
+            ["58", "60", "62", "64"].forEach(b => {
+                const ms = MASTER_MACHINES.filter(m => m.b === b);
+                let freeWashers = 0, busyWashers = 0, freeDryers = 0, busyDryers = 0;
+                ms.forEach(m => {
+                    const live = liveData.find(d => String(d.Machine_ID) === String(m.id));
+                    const end = (live && live.Expected_End_Time) ? new Date(live.Expected_End_Time) : null;
+                    const isAvail = !end || end <= new Date();
+                    if (/-W\d+$/i.test(m.id)) {
+                        if (isAvail) freeWashers++; else busyWashers++;
+                    } else {
+                        if (isAvail) freeDryers++; else busyDryers++;
+                    }
+                });
+                const btn = document.createElement('button');
+                btn.className = "text-left bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-indigo-300 btn-transition";
+                btn.innerHTML = `
+                    <div class="text-2xl font-bold text-slate-900">${txt[lang].building} ${b}</div>
+                    <div class="text-sm text-slate-500 mt-1 space-y-0.5">
+                        <div>${txt[lang].washers}: ${freeWashers} ${txt[lang].free} · ${busyWashers} ${txt[lang].inUse}</div>
+                        <div>${txt[lang].dryers}: ${freeDryers} ${txt[lang].free} · ${busyDryers} ${txt[lang].inUse}</div>
+                    </div>`;
+                btn.onclick = () => { currentBuilding = b; showMachines(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function showMachines() {
+            document.getElementById('building-view').classList.add('hidden');
+            document.getElementById('machines-view').classList.remove('hidden');
+            renderMachines(currentBuilding);
+        }
+
+        function showBuildings() {
+            currentBuilding = null;
+            document.getElementById('machines-view').classList.add('hidden');
+            document.getElementById('building-view').classList.remove('hidden');
+        }
+
+        function renderMachines(b) {
+            document.getElementById('building-title').textContent = `${txt[lang].building} ${b}`;
+            const container = document.getElementById('machines-container');
+            container.innerHTML = '';
+            MASTER_MACHINES.filter(m => m.b === b).forEach(m => {
+                const live = liveData.find(d => String(d.Machine_ID) === String(m.id));
+                const end = (live && live.Expected_End_Time) ? new Date(live.Expected_End_Time) : null;
+                const now = new Date();
+                const isAvail = !end || end <= now;
+                const mins = isAvail ? 0 : Math.max(0, Math.round((end - now) / 60000));
+                const isWasher = /-W\d+$/i.test(m.id);
+                const reported = Boolean(live && live.Reported_Error);
+                const owner = (live && live.User_ID) ? '#' + String(live.User_ID).replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() : '';
+
+                const stateBg = isAvail ? 'bg-emerald-50/60 border-emerald-100' : (reported ? 'bg-amber-50/60 border-amber-100' : 'bg-rose-50/60 border-rose-100');
+                const dot = isAvail ? 'bg-emerald-500' : (reported ? 'bg-amber-500' : 'bg-rose-500');
+                const statusText = isAvail ? txt[lang].ready : (mins + ' ' + txt[lang].min);
+                const statusColor = isAvail ? 'text-emerald-700' : (reported ? 'text-amber-700' : 'text-rose-700');
+
+                const estimated = (!isAvail) ? `<span class="text-[10px] font-medium text-slate-400">${txt[lang].estimated}</span>` : '';
+                const ownerLabel = (!isAvail && owner) ? `${txt[lang].owner} ${owner}` : (!isAvail ? txt[lang].inUse : '');
+
+                const problemBadge = reported ? `
+                    <span class="text-amber-600" title="${txt[lang].problemReported}">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </span>` : '';
+
+                const reportBtn = (isWasher && !isAvail) ? `
+                    <button onclick="reportProblem('${m.id}')" class="mt-2 w-full text-xs font-medium py-2 px-3 rounded-lg border transition-colors ${reported ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}">
+                        ${reported ? txt[lang].problemReported : txt[lang].reportProblem}
+                    </button>` : '';
+
+                const card = document.createElement('div');
+                card.className = `rounded-xl p-4 border ${stateBg}`;
+                card.innerHTML = `
+                    <a href="index.html?machine=${m.id}" class="block hover:opacity-80 transition-opacity">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-2">
+                                <span class="relative flex h-2.5 w-2.5 mt-1">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dot} opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 ${dot}"></span>
+                                </span>
+                                <div>
+                                    <div class="font-semibold text-slate-900 leading-tight">${m.id}</div>
+                                    <div class="text-[11px] text-slate-400">${m.t}</div>
+                                </div>
+                                ${problemBadge}
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs font-medium ${statusColor}">${statusText}</div>
+                                ${estimated}
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1.5">${ownerLabel}</div>
+                    </a>
+                    ${reportBtn}`;
+                container.appendChild(card);
+            });
+        }
+
+        document.getElementById('lang-toggle').onclick = () => { lang = lang === 'en' ? 'de' : 'en'; localStorage.setItem('laundryLang', lang); render(); };
+        document.getElementById('back-btn').onclick = showBuildings;
+        document.getElementById('alarms-btn').onclick = () => { document.getElementById('alarms-panel').classList.toggle('hidden'); };
+        document.getElementById('onboarding-close').onclick = () => { localStorage.setItem('onboarded', '1'); document.getElementById('onboarding-modal').classList.add('hidden'); };
+
+        if (!localStorage.getItem('onboarded')) document.getElementById('onboarding-modal').classList.remove('hidden');
+
+        setInterval(fetchMachines, 5000);
+        fetchMachines();
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => ensureServiceWorkerReady().catch(err => console.log('SW registration failed', err)));
+        }
+    </script>
+</body>
+</html>

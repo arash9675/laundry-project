@@ -1,0 +1,25 @@
+# Secrets / credentials
+service_account.json
+vapid_keys.json
+push_subscriptions.json
+push_notified.json
+.env
+.env.*
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+nohup.out
+uvicorn.log
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

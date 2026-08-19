@@ -1,0 +1,12 @@
+{
+  "name": "Tabu Wash",
+  "short_name": "Tabu Wash",
+  "start_url": "/dashboard.html",
+  "display": "standalone",
+  "background_color": "#f7f6f4",
+  "theme_color": "#4f46e5",
+  "icons": [
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
