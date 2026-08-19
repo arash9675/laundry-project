@@ -222,6 +222,26 @@
         let machineIsInUse = false;
         let activeAlarmAudio = null;
 
+        // Pre-create and unlock the alarm audio on the first user gesture so it
+        // can ring later (e.g. when the app returns to the foreground) even though
+        // the play() call is not inside a user gesture.
+        function ensureAlarmAudio() {
+            if (!activeAlarmAudio) {
+                activeAlarmAudio = new Audio('./alarm.mp3');
+                activeAlarmAudio.loop = true;
+                activeAlarmAudio.preload = 'auto';
+            }
+            return activeAlarmAudio;
+        }
+        function unlockAlarmAudio() {
+            const a = ensureAlarmAudio();
+            a.muted = true;
+            a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; }).catch(() => { a.muted = false; });
+        }
+        ['pointerdown', 'touchstart', 'keydown'].forEach(evt =>
+            window.addEventListener(evt, unlockAlarmAudio, { once: true, capture: true })
+        );
+
         const API_URL = window.location.origin;
         const urlParams = new URLSearchParams(window.location.search);
         const machineId = urlParams.get('machine');
@@ -416,10 +436,11 @@
             document.getElementById('alarm-modal-title').textContent = lang === 'de' ? `Maschine ${mId} fertig` : `Machine ${mId} finished`;
             document.getElementById('alarm-modal-desc').textContent = lang === 'de' ? `Dein Waschgang ist beendet.` : `Your laundry cycle has completed.`;
             if (!activeAlarmAudio) {
-                activeAlarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
-                activeAlarmAudio.loop = true;
-                activeAlarmAudio.play().catch(e => console.log("Audio autoplay restricted:", e));
+                activeAlarmAudio = ensureAlarmAudio();
             }
+            activeAlarmAudio.muted = false;
+            activeAlarmAudio.currentTime = 0;
+            activeAlarmAudio.play().catch(e => console.log("Audio play blocked:", e));
             sendLaundryNotification("Laundry finished", `Machine ${mId} is ready.`, { tag: 'laundry-finished', renotify: true, requireInteraction: true, url: `./index.html?machine=${mId}` }).catch(e => console.log(e));
         }
 
@@ -609,6 +630,8 @@
 
         updateUI();
         setInterval(fetchMachineStatus, 5000);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fetchMachineStatus(); });
+        window.addEventListener('focus', () => fetchMachineStatus());
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => ensureServiceWorkerReady().catch(err => console.log('SW registration failed', err)));

@@ -10,7 +10,12 @@
     if (!isAndroidApp) return;
 
     function getNotifications() {
-        return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+        try {
+            return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+        } catch (e) {
+            console.log('LocalNotifications plugin lookup failed:', e);
+            return null;
+        }
     }
 
     function stableId(machineId) {
@@ -22,23 +27,27 @@
 
     async function ensurePermission() {
         const n = getNotifications();
-        if (!n) return false;
+        if (!n) { console.log('LocalNotifications plugin not found'); return false; }
         try {
-            const status = await n.checkPermissions();
+            let status = await n.checkPermissions();
             if (status && status.display === 'granted') return true;
             const req = await n.requestPermissions();
-            return req && req.display === 'granted';
-        } catch (e) { console.log('Native notification permission failed:', e); return false; }
+            console.log('LocalNotifications permission:', req && req.display);
+            return !!(req && req.display === 'granted');
+        } catch (e) {
+            console.log('LocalNotifications permission error:', e);
+            return false;
+        }
     }
 
     window.TabuNativeAlarm = {
         // Schedule a 5-minute warning and a "finished" notification for a machine.
         async schedule(machineId, endTimeISO) {
             const n = getNotifications();
-            if (!n) return;
+            if (!n) { console.log('TabuNativeAlarm: plugin unavailable'); return; }
             try {
                 const ok = await ensurePermission();
-                if (!ok) return;
+                if (!ok) { console.log('TabuNativeAlarm: permission denied'); return; }
 
                 const end = new Date(endTimeISO).getTime();
                 const now = Date.now();
@@ -61,7 +70,8 @@
                 });
 
                 await n.schedule({ notifications });
-            } catch (e) { console.log('Native notification schedule failed:', e); }
+                console.log('TabuNativeAlarm: scheduled', notifications.length, 'notifications for', machineId);
+            } catch (e) { console.log('TabuNativeAlarm schedule failed:', e); }
         },
 
         async cancel(machineId) {
@@ -70,7 +80,8 @@
             try {
                 const base = stableId(machineId);
                 await n.cancel({ notifications: [{ id: base }, { id: base + 1 }] });
-            } catch (e) { console.log('Native notification cancel failed:', e); }
+                console.log('TabuNativeAlarm: cancelled for', machineId);
+            } catch (e) { console.log('TabuNativeAlarm cancel failed:', e); }
         }
     };
 })();
