@@ -6,6 +6,7 @@
     <title>Tabu Wash</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="sound.js"></script>
+    <script src="native-alarm.js"></script>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -428,7 +429,7 @@
             const remaining = getAlarms().filter(a => {
                 const m = liveData.find(x => String(x.Machine_ID) === String(a.m));
                 const done = !m || m.Status === "Available" || now >= new Date(a.t);
-                if (done) unsubscribeFromPush(a.m);
+                if (done) { unsubscribeFromPush(a.m); if (window.TabuNativeAlarm) window.TabuNativeAlarm.cancel(a.m); }
                 return !done;
             });
             saveAlarms(remaining);
@@ -467,6 +468,7 @@
             disarmAlarm(m);
             if (m === machineId) { wantsAlarm = false; document.getElementById('alarm-toggle').checked = false; }
             unsubscribeFromPush(m);
+            if (window.TabuNativeAlarm) window.TabuNativeAlarm.cancel(m);
             renderAlarmsPanel();
             updateAlarmNotice();
         }
@@ -541,6 +543,7 @@
                     armAlarm(machineId, endTime.toISOString());
                     subscribeToPush(machineId);
                     sendLaundryNotification('Laundry timer active', `Machine ${machineId}: ${formatRemaining(endTime)}`, { tag: 'laundry-active-timer', silent: true, renotify: true, url: `./index.html?machine=${machineId}` }).catch(e => console.log(e));
+                    if (window.TabuNativeAlarm) window.TabuNativeAlarm.schedule(machineId, endTime.toISOString());
                 }
 
                 machineIsInUse = true;
@@ -560,7 +563,7 @@
         alarmToggle.addEventListener('change', (e) => {
             wantsAlarm = e.target.checked;
             if (wantsAlarm) requestNotificationAccess().catch(err => console.log(err));
-            else { disarmAlarm(machineId); unsubscribeFromPush(); }
+            else { disarmAlarm(machineId); unsubscribeFromPush(); if (window.TabuNativeAlarm) window.TabuNativeAlarm.cancel(machineId); }
             updateAlarmNotice();
         });
 

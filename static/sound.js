@@ -7,6 +7,7 @@
     if (!isAndroidApp) return;
 
     const STORAGE_KEY = 'laundrySoundEnabled';
+    const WELCOME_KEY = 'laundryWelcomePlayed';
     const CLICK_SOUND = './option.mp3';
     const WELCOME_SOUND = './start.mp3';
 
@@ -40,7 +41,13 @@
         } catch (e) { /* ignore */ }
     }
 
-    let welcomePlayed = false;
+    function hasWelcomePlayed() {
+        try { return sessionStorage.getItem(WELCOME_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    function markWelcomePlayed() {
+        try { sessionStorage.setItem(WELCOME_KEY, '1'); } catch (e) { /* ignore */ }
+    }
 
     // Delegated click listener in capture phase so it also catches dynamically
     // rendered machine cards and their inline onclick handlers.
@@ -50,11 +57,12 @@
         const interactive = el.closest('button, a, [role="button"], select, input[type="checkbox"]');
         if (!interactive) return;
 
-        // First user action plays the welcome sound; every action after that
-        // plays the click sound. This avoids two sounds overlapping on the
-        // first tap.
-        if (!welcomePlayed) {
-            welcomePlayed = true;
+        // First user action in the session plays the welcome sound; every
+        // action after that plays the click sound. sessionStorage persists
+        // across page navigations (dashboard <-> machine detail) but resets
+        // when the session ends.
+        if (!hasWelcomePlayed()) {
+            markWelcomePlayed();
             playWelcome();
         } else {
             playClick();
