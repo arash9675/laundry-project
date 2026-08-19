@@ -9,13 +9,24 @@
 
     if (!isAndroidApp) return;
 
+    // The plugin's web JS is NOT bundled into our remote page, so we must register
+    // it ourselves. The native bridge injects the plugin metadata (PluginHeaders)
+    // and a registerPlugin() helper, which creates a working native proxy.
+    let localNotifications = null;
     function getNotifications() {
+        if (localNotifications) return localNotifications;
+        const C = window.Capacitor;
+        if (!C) return null;
         try {
-            return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+            if (C.Plugins && C.Plugins.LocalNotifications) {
+                localNotifications = C.Plugins.LocalNotifications;
+            } else if (typeof C.registerPlugin === 'function') {
+                localNotifications = C.registerPlugin('LocalNotifications');
+            }
         } catch (e) {
             console.log('LocalNotifications plugin lookup failed:', e);
-            return null;
         }
+        return localNotifications;
     }
 
     function stableId(machineId) {
@@ -59,14 +70,14 @@
                         id: stableId(machineId),
                         title: 'Machine ' + machineId + ' almost done',
                         body: '5 minutes left',
-                        schedule: { at: warnAt }
+                        schedule: { at: warnAt.toISOString(), allowWhileIdle: true }
                     });
                 }
                 notifications.push({
                     id: stableId(machineId) + 1,
                     title: 'Machine ' + machineId + ' finished',
                     body: 'Your laundry is ready',
-                    schedule: { at: new Date(end) }
+                    schedule: { at: new Date(end).toISOString(), allowWhileIdle: true }
                 });
 
                 await n.schedule({ notifications });
