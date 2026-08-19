@@ -1,10 +1,11 @@
-const CACHE_NAME = 'laundry-app-v22';
+const CACHE_NAME = 'laundry-app-v23';
 const assetsToCache = [
   './dashboard.html',
   './index.html',
   './manifest.json',
   './sound.js',
-  './click.mp3',
+  './option.mp3',
+  './start.mp3',
   'https://cdn.tailwindcss.com'
 ];
 

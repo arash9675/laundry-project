@@ -1,5 +1,5 @@
 (function () {
-    // Audio click feedback — Android app (Capacitor) only.
+    // Audio feedback — Android app (Capacitor) only.
     const isAndroidApp = !!(window.Capacitor
         && typeof window.Capacitor.getPlatform === 'function'
         && window.Capacitor.getPlatform() === 'android');
@@ -7,23 +7,40 @@
     if (!isAndroidApp) return;
 
     const STORAGE_KEY = 'laundrySoundEnabled';
-    const SOUND_URL = './click.mp3';
+    const CLICK_SOUND = './option.mp3';
+    const WELCOME_SOUND = './start.mp3';
 
-    const enabled = localStorage.getItem(STORAGE_KEY) !== '0';
-    const audio = new Audio(SOUND_URL);
-    audio.preload = 'auto';
-    audio.volume = 0.5;
+    const clickAudio = new Audio(CLICK_SOUND);
+    clickAudio.preload = 'auto';
+    clickAudio.volume = 0.5;
+
+    const welcomeAudio = new Audio(WELCOME_SOUND);
+    welcomeAudio.preload = 'auto';
+    welcomeAudio.volume = 0.7;
+
+    function isEnabled() {
+        return localStorage.getItem(STORAGE_KEY) !== '0';
+    }
 
     function playClick() {
-        if (localStorage.getItem(STORAGE_KEY) === '0') return;
+        if (!isEnabled()) return;
         try {
-            audio.currentTime = 0;
-            const p = audio.play();
+            clickAudio.currentTime = 0;
+            const p = clickAudio.play();
             if (p && p.catch) p.catch(function () {});
         } catch (e) { /* ignore */ }
     }
 
-    // Delegated listener in capture phase so it also catches dynamically
+    function playWelcome() {
+        if (!isEnabled()) return;
+        try {
+            welcomeAudio.currentTime = 0;
+            const p = welcomeAudio.play();
+            if (p && p.catch) p.catch(function () {});
+        } catch (e) { /* ignore */ }
+    }
+
+    // Delegated click listener in capture phase so it also catches dynamically
     // rendered machine cards and their inline onclick handlers.
     document.addEventListener('click', function (event) {
         const el = event.target;
@@ -48,11 +65,11 @@
         btn.title = 'Sound';
 
         function render() {
-            btn.innerHTML = localStorage.getItem(STORAGE_KEY) === '0' ? ICON_OFF : ICON_ON;
+            btn.innerHTML = isEnabled() ? ICON_ON : ICON_OFF;
         }
 
         btn.addEventListener('click', function () {
-            const next = localStorage.getItem(STORAGE_KEY) === '0' ? '1' : '0';
+            const next = !isEnabled() ? '1' : '0';
             localStorage.setItem(STORAGE_KEY, next);
             render();
             if (next === '1') playClick();
@@ -62,9 +79,15 @@
         anchor.parentNode.insertBefore(btn, anchor);
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', mountToggle);
-    } else {
+    function onReady() {
         mountToggle();
+        // Welcome sound on app open.
+        playWelcome();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', onReady);
+    } else {
+        onReady();
     }
 })();
