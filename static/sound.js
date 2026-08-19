@@ -40,12 +40,23 @@
         } catch (e) { /* ignore */ }
     }
 
+    let welcomePlayed = false;
+
     // Delegated click listener in capture phase so it also catches dynamically
     // rendered machine cards and their inline onclick handlers.
     document.addEventListener('click', function (event) {
         const el = event.target;
         if (!(el instanceof Element)) return;
-        if (el.closest('button, a, [role="button"], select, input[type="checkbox"]')) {
+        const interactive = el.closest('button, a, [role="button"], select, input[type="checkbox"]');
+        if (!interactive) return;
+
+        // First user action plays the welcome sound; every action after that
+        // plays the click sound. This avoids two sounds overlapping on the
+        // first tap.
+        if (!welcomePlayed) {
+            welcomePlayed = true;
+            playWelcome();
+        } else {
             playClick();
         }
     }, true);
@@ -81,8 +92,6 @@
 
     function onReady() {
         mountToggle();
-        // Welcome sound on app open.
-        playWelcome();
     }
 
     if (document.readyState === 'loading') {
